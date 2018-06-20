@@ -399,7 +399,7 @@ if __name__ == "__main__":
     # copy here
     start = time.time()
     while True:
-        pop = 100  # np.random.randint(10, 21)
+        pop = 40  # np.random.randint(10, 21)
         m = 14  # np.random.randint(35, 45)
 
         first = StrassenSearch(pop, 2, 7, m, file_name)
