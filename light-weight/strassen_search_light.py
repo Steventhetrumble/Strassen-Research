@@ -11,29 +11,6 @@ def load_options(json_name):
     return json1_data
 
 
-def find_options(matrix_size, mirror):
-    options_size = matrix_size ** 2
-    options = []
-    if mirror:
-        for i in range(int((3 ** options_size))):
-            rows = []
-            for j in range(0, options_size):
-                rows.append(1 - int(i % 3 ** (options_size - j) / (3 ** (options_size - (j + 1)))))
-            number = np.count_nonzero(rows)
-            if 0 < number < 5:
-                options.append(rows)
-        return options
-    else:
-        for i in range(int((3 ** options_size) / 2)):
-            rows = []
-            for j in range(0, options_size):
-                rows.append(1 - int(i % 3 ** (options_size - j) / (3 ** (options_size - (j + 1)))))
-            number = np.count_nonzero(rows)
-            if 0 < number < 5:
-                options.append(rows)
-        return options
-
-
 def create_solution():
     c1 = np.array([[1], [0], [0], [0],
                    [0], [1], [0], [0],
@@ -69,8 +46,6 @@ class StrassenSearch:
         self.filename = '2by2.h5'
         self.prev_best_i1 = 1000
         self.prev_best_cost1 = 1000
-        self.prev_best_i2 = 1000
-        self.prev_best_cost2 = 1000
         self.num_of_pop = number
         self.best_cost = 0
         self.best_x = []
@@ -91,7 +66,6 @@ class StrassenSearch:
         self.cost = []
         self.solution = create_solution()
         self.options = load_options(options_file)
-        self.search_options = find_options(self.dimension, False)
 
         for i in xrange(self.num_of_pop):
             chromosome = self.create_chromosome()
@@ -168,36 +142,6 @@ class StrassenSearch:
                     best_final_value = winner_final_value
                     best_x = winner_x
                     return best_val, best_final_value, best_x, best_cost
-        return best_val, best_final_value, best_x, best_cost
-
-    def final_search(self, value, final_value, x, fitness):
-        option = self.search_options
-        best_cost = fitness
-        best_val = value
-        best_final_value = final_value
-        best_x = x
-        # option = find_options(2,False)
-        count = 0
-        column_choice = np.arange(len(value[0]))
-        np.random.shuffle(column_choice)
-        for column in column_choice:
-            for j in range(0, len(option), 1):
-                for k in range(0, len(option), 1):
-                    val1 = np.copy(value)
-                    option1 = option[j]
-                    option2 = option[k]
-                    options = np.concatenate((option1, option2), axis=0)
-                    val1[:, column] = options.T
-                    final_val1 = self.expand(val1)
-                    cost1, x1 = self.determine_fitness(final_val1)
-                    count += 1
-                    if cost1 > best_cost:
-                        best_cost = cost1
-                        best_val = val1
-                        best_final_value = final_val1
-                        best_x = x1
-                        return best_val, best_final_value, best_x, best_cost
-
         return best_val, best_final_value, best_x, best_cost
 
     def create_chromosome(self):
@@ -319,37 +263,10 @@ class StrassenSearch:
 
     def check_for_improvement(self):
         if self.count % self.num_of_pop*self.mutation == 0:
-            if (self.best_i == self.prev_best_i2) and (self.best_cost == self.prev_best_cost2):
+            if (self.best_i == self.prev_best_i1) and (self.best_cost == self.prev_best_cost1):
                 self.purge(self.purge_rate)
                 print "repeat"
                 print self.count
-            elif (self.best_i == self.prev_best_i1) and (self.best_cost == self.prev_best_cost1):
-                # self.running = 0
-                #     self.success = 1
-                self.prev_best_i1 = 1000
-                self.prev_best_cost1 = 1000
-                self.prev_best_i2 = self.best_i
-                self.prev_best_cost2 = self.best_cost
-                # self.temp_val = self.best_value
-                temp_cost = self.best_cost
-                # self.best_value, self.final_best_value, self.best_x, self.best_cost = self.final_search(
-                #                                                                                   self.best_value,
-                #                                                                                   self.final_best_value,
-                #                                                                                   self.best_x,
-                #                                                                                   self.best_cost)
-                if temp_cost != self.best_cost:
-                    self.best_in_population = self.encode(self.best_value)
-                    self.population[self.best_i] = self.best_in_population
-                    self.cost[self.best_i] = self.best_cost
-                    self.x[self.best_i] = self.best_x
-                    self.value[self.best_i] = self.best_value
-                    self.final_value[self.best_i] = self.final_best_value
-                if self.best_cost == 1:
-                    print self.best_value
-                    check_and_write(self.best_value.T, self.filename, self.multiplication)
-                    self.running = 0
-                    self.success = 1
-                #     #self.purge(1)
             else:
                 self.prev_best_i1 = self.best_i
                 self.prev_best_cost1 = self.best_cost
@@ -399,7 +316,7 @@ class StrassenSearch:
                     self.x[items_for_purge[i]] = temp_x
 
     def simple_search(self):
-        while self.count < 700 and self.running:
+        while self.count < 400 and self.running:
             pop2 = np.copy(self.population)
             for i in xrange(self.num_of_pop):
                 # trial_a = 0b0
