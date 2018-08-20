@@ -9,10 +9,10 @@ def check_and_write(array, filename, NUM_ENTRIES):
         f = tables.open_file(filename, mode='w')
         atom = tables.Float64Atom()
         array_c = f.create_earray(f.root, 'data', atom, (0, 8))
-        print array
+        print (array)
         array_c.append(array)
         f.close()
-        print "new file"
+        print ("new file")
         return True
     f = tables.open_file(filename, mode='r')
     i = 0
@@ -26,10 +26,10 @@ def check_and_write(array, filename, NUM_ENTRIES):
             break
     f.close()
     if check:
-        print "Duplicate Solution"
+        print ("Duplicate Solution")
         return False
     else:
-        print "Unique Solution"
+        print ("Unique Solution")
         f = tables.open_file(filename, mode='a')
         f.root.data.append(array)
         f.close()
@@ -48,8 +48,8 @@ def create_dictionary(options):
             for entry2 in option2:
                 key2 += str(entry2)
             top_dictionary[key1][key2] = []
-            for i in xrange(len(option)):
-                for j in xrange(len(option2)):
+            for i in range(len(option)):
+                for j in range(len(option2)):
                     top_dictionary[key1][key2].append(option[i]*option2[j])
     return top_dictionary
 
@@ -84,5 +84,5 @@ if __name__ == '__main__':
     data = json.dumps(dictionary)
     with open('2by2data.json', 'w') as outfile:
         outfile.write(data)
-    print dictionary["10-10"]["10-10"]
-    print type(data)
+    print (dictionary["10-10"]["10-10"])
+    print (type(data))

@@ -1,8 +1,40 @@
 import numpy as np
 import json
-from create_options import *
+#from create_options import check_and_write
 import time
+import tables
+import os.path
 
+def check_and_write(array, filename, NUM_ENTRIES):
+    if not os.path.isfile(filename):
+        f = tables.open_file(filename, mode='w')
+        atom = tables.Float64Atom()
+        array_c = f.create_earray(f.root, 'data', atom, (0, 8))
+        print (array)
+        array_c.append(array)
+        f.close()
+        print ("new file")
+        return True
+    f = tables.open_file(filename, mode='r')
+    i = 0
+    check = False
+    for item in f.root.data[0]:
+        c = np.array((f.root.data[i:i+NUM_ENTRIES,0:]))
+        idx = np.where(abs((c[:,np.newaxis,:] - array)).sum(axis=2) == 0)
+        i = i + NUM_ENTRIES
+        if len(idx[0]) == NUM_ENTRIES:
+            check = True
+            break
+    f.close()
+    if check:
+        print ("Duplicate Solution")
+        return False
+    else:
+        print ("Unique Solution")
+        f = tables.open_file(filename, mode='a')
+        f.root.data.append(array)
+        f.close()
+        return True
 
 def load_options(json_name):
     json1_file = open(json_name)
@@ -10,40 +42,103 @@ def load_options(json_name):
     json1_data = json.loads(json1_str)
     return json1_data
 
+def create_dictionary(possible_options):
+    for i in range(len(possible_options)):
+        for j in range(len(possible_options[i])):
+            if possible_options[i][j] == 0:
+                possible_options[i][j] = 0.+0.j
+            elif possible_options[i][j] == 1:
+                possible_options[i][j] = 1.+0.j
+            elif possible_options[i][j] == -1:
+                possible_options[i][j] = -1.+0.j
+            elif possible_options[i][j] % 2 == 0:
+                possible_options[i][j] = 0. -1.j
+            elif possible_options[i][j] % 3 == 0:
+                possible_options[i][j] = 0. + 1.j
+    top_dictionary = {}
+    for option in possible_options:
+        key1 = ""
+        for entry in option:
+            key1 += str(entry)
+        top_dictionary[key1] = {}
+        for option2 in possible_options:
+            key2 = ""
+            for entry2 in option2:
+                key2 += str(entry2)
+            top_dictionary[key1][key2] = []
+            for i in range(len(option)):
+                for j in range(len(option2)):
+                    top_dictionary[key1][key2].append(option[i]*option2[j])
+    return top_dictionary
+
+def find_options(matrix_size, mirror):
+    options_size = matrix_size ** 2
+    options = []
+    if mirror:
+        for i in range(int((5 ** options_size))):
+            rows = []
+            for j in range(0, options_size):
+                rows.append(1 - int(i % 5 ** (options_size - j) / (5 ** (options_size - (j + 1)))))
+            # number = np.count_nonzero(rows)
+            # if 0 < number < 5:
+            options.append(rows)
+        return options
+    else:
+        print(int((3 ** options_size) / 2))
+        print(int((5 ** options_size) / 2))
+        for i in range(int((5 ** options_size) / 2)):
+            
+            rows = []
+            for j in range(0, options_size):
+                rows.append(1 - int(i % 5 ** (options_size - j) / (5 ** (options_size - (j + 1)))))
+            # number = np.count_nonzero(rows)
+            # if 0 < number < 5:
+            #     options.append(rows)
+            options.append(rows)
+        return options
 
 def create_solution():
-    c1 = np.array([[1], [0], [0], [0],
-                   [0], [1], [0], [0],
-                   [0], [0], [0], [0],
-                   [0], [0], [0], [0]])
+    c1 = np.array([[1.+0j], [0.+0.j], [0.+0.j], [0.+0.j],
+                   [0.+0.j], [1.+0.j], [0.+0.j], [0.+0.j],
+                   [0.+0.j], [0.+0.j], [0.+0.j], [0.+0.j],
+                   [0.+0.j], [0.+0.j], [0.+0.j], [0.+0.j]])
 
-    c2 = np.array([[0], [0], [1], [0],
-                   [0], [0], [0], [1],
-                   [0], [0], [0], [0],
-                   [0], [0], [0], [0]])
+    c2 = np.array([[0.+0.j], [0.+0.j], [1.+0.j], [0.+0.j],
+                   [0.+0.j], [0.+0.j], [0.+0.j], [1.+0.j],
+                   [0.+0.j], [0.+0.j], [0.+0.j], [0.+0.j],
+                   [0.+0.j], [0.+0.j], [0.+0.j], [0.+0.j]])
 
-    c3 = np.array([[0], [0], [0], [0],
-                   [0], [0], [0], [0],
-                   [1], [0], [0], [0],
-                   [0], [1], [0], [0]])
+    c3 = np.array([[0.+0.j], [0.+0.j], [0.+0.j], [0.+0.j],
+                   [0.+0.j], [0.+0.j], [0.+0.j], [0.+0.j],
+                   [1.+0.j], [0.+0.j], [0.+0.j], [0.+0.j],
+                   [0.+0.j], [1.+0.j], [0.+0.j], [0.+0.j]])
 
-    c4 = np.array([[0], [0], [0], [0],
-                   [0], [0], [0], [0],
-                   [0], [0], [1], [0],
-                   [0], [0], [0], [1]])
+    c4 = np.array([[0.+0.j], [0.+0.j], [0.+0.j], [0.+0.j],
+                   [0.+0.j], [0.+0.j], [0.+0.j], [0.+0.j],
+                   [0.+0.j], [0.+0.j], [1.+0.j], [0.+0.j],
+                   [0.+0.j], [0.+0.j], [0.+0.j], [1.+0.j]])
 
     final_sol = np.concatenate((c1, c2, c3, c4), axis=1)
     return final_sol
 
-
 class StrassenSearch:
     def __init__(self, number, dimensions, multiplications, mutation_rate, options_file):
+        self.negative_imaginary = 0. - 1.j
+        self.imaginary = 0.+1.j
+        self.one = 1. + 0.j
+        self.zero = 0. + 0.j
+        self.neg_one = -1. + 0.j
+        self.b_negative_imaginary = 0b10000
+        self.b_imaginary = 0b01000
+        self.b_one = 0b00100
+        self.b_zero = 0b00010
+        self.b_neg_one = 0b00001
         # Look to reduce this list
         self.improvement = [1]*number
         self.temp_cost_finder = [0]*number
         self.success = 0
         self.purge_rate = int(20)
-        self.filename = '2by2.h5'
+        self.filename = '3by3imaginary.h5'
         self.prev_best_i1 = 1000
         self.prev_best_cost1 = 1000
         self.prev_best_i2 = 1000
@@ -67,9 +162,9 @@ class StrassenSearch:
         self.population = []
         self.cost = []
         self.solution = create_solution()
-        self.options = load_options(options_file)
-        self.search_options = find_options(self.dimension, False)
-
+        self.options = create_dictionary(find_options(self.dimension,True))
+        print("Dictionary Initialized")
+        # self.search_options = find_options(self.dimension, False)
         for i in range(self.num_of_pop):
             chromosome = self.create_chromosome()
             val = self.decode(chromosome)
@@ -88,18 +183,18 @@ class StrassenSearch:
         for i in range(cols):
             key1 = ""
             key2 = ""
-            for j in range(rows/2):
+            for j in range(int(rows/2)):
                 key1 += str(value[j][i])
-            for j in range(rows/2, rows):
+            for j in range(int(rows/2), rows):
                 key2 += str(value[j][i])
-            if key1 == '0000' or key2 == '0000':
+            if key1 == '0j0j0j0j' or key2 == '0j0j0j0j':
                 final_value.append([0]*16)
             else:
                 final_value.append(self.options[key1][key2])
         return np.array(final_value).T
-
     def local_search(self, value, final_value, x, fitness):
         # TODO: randomize starting position of local search
+        
         best_cost = fitness
         best_val = value
         best_final_value = final_value
@@ -108,93 +203,132 @@ class StrassenSearch:
             for j in range(0, len(value[0]), 1):
                 val1 = np.copy(value)
                 val2 = np.copy(value)
-                if value[i][j] == 1:
-                    val1[i][j] = 0
-                    val2[i][j] = -1
+                val3 = np.copy(value)
+                val4 = np.copy(value)
+                if value[i][j] == self.one:
+                    val1[i][j] = self.zero
+                    val2[i][j] = self.neg_one
+                    val3[i][j] = self.negative_imaginary
+                    val4[i][j] = self.imaginary
                     final_val1 = self.expand(val1)
                     final_val2 = self.expand(val2)
+                    final_val3 = self.expand(val3)
+                    final_val4 = self.expand(val4)
                     cost1, x1 = self.determine_fitness(final_val1)
                     cost2, x2 = self.determine_fitness(final_val2)
-                elif value[i][j] == 0:
-                    val1[i][j] = 1
-                    val2[i][j] = -1
+                    cost3, x3 = self.determine_fitness(final_val3)
+                    cost4, x4 = self.determine_fitness(final_val4)
+                elif value[i][j] == self.zero:
+                    val1[i][j] = self.one
+                    val2[i][j] = self.neg_one
+                    val3[i][j] = self.negative_imaginary
+                    val4[i][j] = self.imaginary
                     final_val1 = self.expand(val1)
                     final_val2 = self.expand(val2)
+                    final_val3 = self.expand(val3)
+                    final_val4 = self.expand(val4)
                     cost1, x1 = self.determine_fitness(final_val1)
                     cost2, x2 = self.determine_fitness(final_val2)
+                    cost3, x3 = self.determine_fitness(final_val3)
+                    cost4, x4 = self.determine_fitness(final_val4)
+                elif value[i][j] == self.imaginary:
+                    val1[i][j] = self.one
+                    val2[i][j] = self.neg_one
+                    val3[i][j] = self.negative_imaginary
+                    val4[i][j] = self.zero
+                    final_val1 = self.expand(val1)
+                    final_val2 = self.expand(val2)
+                    final_val3 = self.expand(val3)
+                    final_val4 = self.expand(val4)
+                    cost1, x1 = self.determine_fitness(final_val1)
+                    cost2, x2 = self.determine_fitness(final_val2)
+                    cost3, x3 = self.determine_fitness(final_val3)
+                    cost4, x4 = self.determine_fitness(final_val4)
+                elif value[i][j] == self.negative_imaginary:
+                    val1[i][j] = self.one
+                    val2[i][j] = self.neg_one
+                    val3[i][j] = self.zero
+                    val4[i][j] = self.imaginary
+                    final_val1 = self.expand(val1)
+                    final_val2 = self.expand(val2)
+                    final_val3 = self.expand(val3)
+                    final_val4 = self.expand(val4)
+                    cost1, x1 = self.determine_fitness(final_val1)
+                    cost2, x2 = self.determine_fitness(final_val2)
+                    cost3, x3 = self.determine_fitness(final_val3)
+                    cost4, x4 = self.determine_fitness(final_val4)
                 else:
-                    val1[i][j] = 0
-                    val2[i][j] = 1
+                    val1[i][j] = self.one
+                    val2[i][j] = self.neg_one
+                    val3[i][j] = self.zero
+                    val4[i][j] = self.imaginary
                     final_val1 = self.expand(val1)
                     final_val2 = self.expand(val2)
+                    final_val3 = self.expand(val3)
+                    final_val4 = self.expand(val4)
                     cost1, x1 = self.determine_fitness(final_val1)
                     cost2, x2 = self.determine_fitness(final_val2)
+                    cost3, x3 = self.determine_fitness(final_val3)
+                    cost4, x4 = self.determine_fitness(final_val4)
                 if cost1 > cost2:
-                    winner_cost = cost1
-                    winner_val = val1
-                    winner_final_value = final_val1
-                    winner_x = x1
+                    winner_cost1 = cost1
+                    winner_val1 = val1
+                    winner_final_value1 = final_val1
+                    winner_x1 = x1
                 else:
-                    winner_cost = cost2
-                    winner_val = val2
-                    winner_final_value = final_val2
-                    winner_x = x2
-                if winner_cost > best_cost:
-                    best_cost = winner_cost
-                    best_val = winner_val
-                    best_final_value = winner_final_value
-                    best_x = winner_x
+                    winner_cost1 = cost2
+                    winner_val1 = val2
+                    winner_final_value1 = final_val2
+                    winner_x1 = x2
+                if cost3 > cost4:
+                    winner_cost2 = cost3
+                    winner_val2 = val3
+                    winner_final_value2 = final_val3
+                    winner_x2 = x3
+                else:
+                    winner_cost2 = cost4
+                    winner_val2 = val4
+                    winner_final_value2 = final_val4
+                    winner_x2 = x4
+                if winner_cost1 > winner_cost2:
+                    win_cost = winner_cost1
+                    win_val = winner_val1
+                    win_final_val = winner_final_value1
+                    win_x = winner_x1
+                else:
+                    win_cost = winner_cost2
+                    win_val = winner_val2
+                    win_final_val = winner_final_value2
+                    win_x = winner_x2
+
+                if win_cost > best_cost:
+                    best_cost = win_cost
+                    best_val = win_val
+                    best_final_value = win_final_val
+                    best_x = win_x
                     return best_val, best_final_value, best_x, best_cost
         return best_val, best_final_value, best_x, best_cost
 
-    def final_search(self, value, final_value, x, fitness):
-        option = self.search_options
-        best_cost = fitness
-        best_val = value
-        best_final_value = final_value
-        best_x = x
-        # option = find_options(2,False)
-        count = 0
-        column_choice = np.arange(len(value[0]))
-        np.random.shuffle(column_choice)
-        for column in column_choice:
-            for j in range(0, len(option), 1):
-                for k in range(0, len(option), 1):
-                    val1 = np.copy(value)
-                    option1 = option[j]
-                    option2 = option[k]
-                    options = np.concatenate((option1, option2), axis=0)
-                    val1[:, column] = options.T
-                    final_val1 = self.expand(val1)
-                    cost1, x1 = self.determine_fitness(final_val1)
-                    count += 1
-                    if cost1 > best_cost:
-                        best_cost = cost1
-                        best_val = val1
-                        best_final_value = final_val1
-                        best_x = x1
-                        return best_val, best_final_value, best_x, best_cost
-
-        return best_val, best_final_value, best_x, best_cost
 
     def create_chromosome(self):
-        one = 0b100
-        zero = 0b010
-        neg_one = 0b001
         # is not rows now- is in the form [a1 a2 a3 a4] [ b1 b2 b3 b4 ]
         rows = self.dimension ** 3
         cols = self.multiplication
         chromosome = 0b0
         for i in range(rows * cols):
             choice = np.random.randint(0, 34)
-            chromosome = chromosome << 3
+            chromosome = chromosome << 5
             # starting with more zeros seems to work faster
-            if choice < 6:
-                chromosome = chromosome | one
-            elif choice < 29:
-                chromosome = chromosome | zero
+            if choice < 5:
+                chromosome = chromosome | self.b_one
+            elif choice < 10:
+                chromosome = chromosome | self.b_imaginary
+            elif choice < 25:
+                chromosome = chromosome | self.b_zero
+            elif choice < 30:
+                chromosome = chromosome | self.b_negative_imaginary
             else:
-                chromosome = chromosome | neg_one
+                chromosome = chromosome | self.b_neg_one
         return chromosome
     # def lookup_final_value(self, value):
     #
@@ -207,14 +341,14 @@ class StrassenSearch:
         mask_b = 0b0
         for i in range(0, rows * cols):
             if i < point:
-                mask_a = mask_a << 3
-                mask_b = mask_b << 3
-                mask_a = mask_a | 0b111
+                mask_a = mask_a << 5
+                mask_b = mask_b << 5
+                mask_a = mask_a | 0b11111
 
             else:
-                mask_b = mask_b << 3
-                mask_a = mask_a << 3
-                mask_b = mask_b | 0b111
+                mask_b = mask_b << 5
+                mask_a = mask_a << 5
+                mask_b = mask_b | 0b11111
         child1 = (bin_a & mask_a) | (bin_b & mask_b)
         child2 = (bin_b & mask_a) | (bin_a & mask_b)
         return child1, child2
@@ -222,29 +356,44 @@ class StrassenSearch:
     def mutate(self, binary, rate):
         rows = self.dimension ** 3
         cols = self.multiplication
+        # rows = self.dimension ** 3
+        # cols = self.multiplication
         mask_a = 0b0
         mask_b = 0b0
-        one = 0b100
-        zero = 0b010
-        neg_one = 0b001
-        mask_one = one << 3 * (self.multiplication * (self.dimension ** 3) - 1)
-        mask_zero = zero << 3 * (self.multiplication * (self.dimension ** 3) - 1)
+        mask_negative_imaginary = self.b_negative_imaginary << 5 * (self.multiplication * (self.dimension ** 3) - 1)
+        mask_imaginary = self.b_imaginary << 5 * (self.multiplication * (self.dimension ** 3) - 1)
+        mask_one = self.b_one << 5 * (self.multiplication * (self.dimension ** 3) - 1)
+        mask_zero = self.b_zero << 5 * (self.multiplication * (self.dimension ** 3) - 1)
+        mask_neg_one = self.b_neg_one << 5 * (self.multiplication * (self.dimension ** 3) - 1)
         for i in range(rows * cols):
             choice_a = np.random.randint(0, 100)
-            mask_a = mask_a << 3
-            mask_b = mask_b << 3
+            mask_a = mask_a << 5
+            mask_b = mask_b << 5
             if choice_a < rate:
-                choice_b = np.random.randint(0, 66)
-                if (choice_b < 22 or choice_b > 55) and not (binary & mask_one):
-                    mask_b = mask_b | one
-                elif (21 < choice_b < 56) and not (binary & mask_zero):
-                    mask_b = mask_b | zero
-                else:
-                    mask_b = mask_b | neg_one
+                is_set = False
+                while not is_set: 
+                    choice_b = np.random.randint(0, 66)
+                    if (choice_b < 22 or choice_b > 55) and not (binary & mask_one):
+                        mask_b = mask_b | self.b_one
+                        is_set = True
+                    elif (21 < choice_b < 56) and not (binary & mask_zero):
+                        mask_b = mask_b | self.b_zero
+                        is_set = True
+                    elif (21 < choice_b < 56) and not (binary & mask_negative_imaginary):
+                        mask_b = mask_b | self.b_negative_imaginary
+                        is_set = True
+                    elif (21 < choice_b < 56) and not (binary & mask_imaginary):
+                        mask_b = mask_b | self.b_imaginary
+                        is_set = True
+                    elif (21 < choice_b < 56) and not (binary & mask_neg_one):
+                        mask_b = mask_b | self.b_neg_one
+                        is_set = True
             else:
-                mask_a = mask_a | 0b111
-            mask_one = mask_one >> 3
-            mask_zero = mask_zero >> 3
+                mask_a = mask_a | 0b11111
+            mask_negative_imaginary >> 5
+            mask_imaginary >> 5 
+            mask_one = mask_one >> 5
+            mask_zero = mask_zero >> 5
         binary = binary & mask_a
         binary = binary | mask_b
         return binary
@@ -256,30 +405,47 @@ class StrassenSearch:
         for i in range(rows):
             temp = []
             for j in range(cols):
-                if binary & 0b100:
-                    temp.append(1)
-                elif binary & 0b010:
-                    temp.append(0)
+                if binary & self.b_negative_imaginary:
+                    temp.append(self.negative_imaginary)
+                elif binary & self.b_imaginary:
+                    temp.append(self.imaginary)
+                elif  binary & self.b_one:
+                    temp.append(self.one)
+                elif binary & self.b_zero:
+                    temp.append(self.zero)
                 else:
-                    temp.append(-1)
-                binary = binary >> 3
+                    temp.append(self.neg_one)
+                binary = binary >> 5
             value.append(temp)
         return np.array(value)
 
     def encode(self, value):
         val = value
+        
         rows = self.dimension ** 3
         cols = self.multiplication
         bins = 0b0
+        count =0
         for i in range(rows):
             for j in range(cols):
-                bins = bins << 3
-                if val[i][j] == 1:
-                    bins = bins | 0b100
-                elif val[i][j] == 0:
-                    bins = bins | 0b010
+                temp_bins = 0b0
+                if val[i][j] == self.negative_imaginary:
+                    temp_bins = self.b_negative_imaginary
+                    temp_bins = temp_bins << 5*(count)
+                elif val[i][j] == self.imaginary:
+                    temp_bins = self.b_imaginary
+                    temp_bins = temp_bins << 5*(count)
+                elif val[i][j] == self.one:
+                    temp_bins = self.b_one
+                    temp_bins = temp_bins << 5*(count)
+                elif val[i][j] == self.zero:
+                    temp_bins = self.b_zero
+                    temp_bins = temp_bins << 5*(count)
                 else:
-                    bins = bins | 0b001
+                    temp_bins = self.b_neg_one
+                    temp_bins = temp_bins << 5*(count)
+                count += 1
+                bins = bins | temp_bins
         return bins
 
     def determine_fitness(self, value):
@@ -292,7 +458,8 @@ class StrassenSearch:
         f = np.subtract(e, self.solution)
         g = np.dot(f, f.T)
         h = np.trace(g)
-        return 1 / (1 + h), d
+        absolute = np.absolute(h)
+        return 1 / (1 + absolute*100000000000 ),d
 
     def check_for_improvement(self):
         if self.count % self.num_of_pop*self.mutation == 0:
@@ -344,12 +511,12 @@ class StrassenSearch:
                 self.value[self.best_i] = self.best_value
                 self.final_value[self.best_i] = self.final_best_value
                 if self.best_cost == 1:
-                    print(self.best_value)
+                    print (self.best_value)
                     check_and_write(self.best_value.T, self.filename, self.multiplication)
                     self.running = 0
                     self.success = 1
                     # self.purge(1)
-                print( self.best_cost)
+                print (self.best_cost)
 
     def purge(self, purge_rate):
         self.population[self.best_i] = self.create_chromosome()
@@ -459,7 +626,7 @@ if __name__ == "__main__":
     # copy here
     start = time.time()
     while True:
-        pop = 100  # np.random.randint(10, 21)
+        pop = 40  # np.random.randint(10, 21)
         m = 14  # np.random.randint(35, 45)
 
         first = StrassenSearch(pop, 2, 7, m, file_name)

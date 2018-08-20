@@ -37,12 +37,12 @@ def create_solution():
 
 
 class StrassenSearch:
-    def __init__(self, number, dimensions, multiplications, mutation_rate, options_file):
+    def __init__(self, number, dimensions, multiplications, mutation, purge_rate, solution, options):
         # Look to reduce this list
         self.improvement = [1]*number
         self.temp_cost_finder = [0]*number
         self.success = 0
-        self.purge_rate = int(20)
+        self.purge_rate = int(number * purge_rate)
         self.filename = '2by2.h5'
         self.prev_best_i1 = 1000
         self.prev_best_cost1 = 1000
@@ -59,14 +59,13 @@ class StrassenSearch:
         # ###############################
         self.dimension = dimensions
         self.multiplication = multiplications
-        self.mutation = mutation_rate
+        self.mutation = mutation
         self.value = []
         self.final_value = []
         self.population = []
         self.cost = []
-        self.solution = create_solution()
-        self.options = load_options(options_file)
-
+        self.solution = solution
+        self.options = options
         for i in xrange(self.num_of_pop):
             chromosome = self.create_chromosome()
             val = self.decode(chromosome)
@@ -262,34 +261,21 @@ class StrassenSearch:
         return 1 / (1 + h), d
 
     def check_for_improvement(self):
-        if self.count % self.num_of_pop*self.mutation == 0:
-            if (self.best_i == self.prev_best_i1) and (self.best_cost == self.prev_best_cost1):
-                self.purge(self.purge_rate)
-                print "repeat"
-                print self.count
-            else:
-                self.prev_best_i1 = self.best_i
-                self.prev_best_cost1 = self.best_cost
-                # self.temp_val = self.best_value
-                # self.temp_cost = self.best_cost
-                self.best_value, self.final_best_value, self.best_x, self.best_cost = self.local_search(
-                                                                                                  self.best_value,
-                                                                                                  self.final_best_value,
-                                                                                                  self.best_x,
-                                                                                                  self.best_cost)
-                self.best_in_population = self.encode(self.best_value)
-                self.population[self.best_i] = self.best_in_population
-                self.cost[self.best_i] = self.best_cost
-                self.x[self.best_i] = self.best_x
-                self.value[self.best_i] = self.best_value
-                self.final_value[self.best_i] = self.final_best_value
-                if self.best_cost == 1:
-                    print self.best_value
-                    check_and_write(self.best_value.T, self.filename, self.multiplication)
-                    self.running = 0
-                    self.success = 1
-                    # self.purge(1)
-                print self.best_cost
+        # if self.count % self.num_of_pop*self.mutation == 0:
+        if (self.best_i == self.prev_best_i1) and (self.best_cost == self.prev_best_cost1):
+            self.purge(self.purge_rate)
+            # print "purge - " + str(self.purge_rate)
+            # print self.count
+        else:
+            self.prev_best_i1 = self.best_i
+            self.prev_best_cost1 = self.best_cost
+            if self.best_cost == 1:
+                print self.best_value
+                check_and_write(self.best_value.T, self.filename, self.multiplication)
+                self.running = 0
+                self.success = 1
+                # self.purge(1)
+            # print self.best_cost
 
     def purge(self, purge_rate):
         self.population[self.best_i] = self.create_chromosome()
@@ -315,8 +301,8 @@ class StrassenSearch:
                     self.cost[items_for_purge[i]] = fitness
                     self.x[items_for_purge[i]] = temp_x
 
-    def simple_search(self):
-        while self.count < 400 and self.running:
+    def simple_search(self, number_of_runs):
+        while self.count < number_of_runs and self.running:
             pop2 = np.copy(self.population)
             for i in xrange(self.num_of_pop):
                 # trial_a = 0b0
@@ -395,25 +381,32 @@ class StrassenSearch:
 if __name__ == "__main__":
     file_name = '2by2data.json'
     # start = time.time()
-
+    sol = create_solution()
+    option = load_options(file_name)
+    pop = 40  # np.random.randint(10, 21)
+    mutation_rate = 14  # np.random.randint(35, 45)
+    runs = 240
+    purge = .25
     # copy here
     start = time.time()
     while True:
-        pop = 40  # np.random.randint(10, 21)
-        m = 14  # np.random.randint(35, 45)
+        # purge rate is the amount of chromosomes (randomly selected) reinitialized if no improvement is made
+        # if the number of runs is met then the entire population is reset
 
-        first = StrassenSearch(pop, 2, 7, m, file_name)
-        first.simple_search()
+        first = StrassenSearch(pop, 2, 7, mutation_rate, purge, sol, option)
+        first.simple_search(runs)
 
         if first.success:
             end = time.time()
             total_time = end - start
-            results = "{},{},{} \n".format(total_time, pop, m)
+            results = "{},{},{},{},{} \n".format(total_time, pop, mutation_rate, purge, runs)
             print("the final running time is {}".format(end - start))
-            print("the parameters are {} and {}".format(pop, m))
+            print("the parameters are pop:{} mutation:{} purge: {} runs: {}".format(pop, mutation_rate, purge, runs))
             fd = open('parameters.csv', 'a')
             fd.write(results)
             fd.close()
             start = time.time()
         else:
-            print "fail"
+            print "-restart-"
+
+
