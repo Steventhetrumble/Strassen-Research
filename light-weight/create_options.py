@@ -4,36 +4,39 @@ import os.path
 import json
 
 
-def check_and_write(array, filename, NUM_ENTRIES):
+def check_and_write(array, filename, NUM_ENTRIES, count2):
     if not os.path.isfile(filename):
         f = tables.open_file(filename, mode='w')
         atom = tables.Float64Atom()
         array_c = f.create_earray(f.root, 'data', atom, (0, 8))
-        print array
+        print (array)
         array_c.append(array)
         f.close()
-        print "new file"
+        print ("new file")
         return True
     f = tables.open_file(filename, mode='r')
     i = 0
-    check = False
-    for item in f.root.data[0]:
-        c = np.array((f.root.data[i:i+NUM_ENTRIES,0:]))
-        idx = np.where(abs((c[:,np.newaxis,:] - array)).sum(axis=2) == 0)
-        i = i + NUM_ENTRIES
-        if len(idx[0]) == NUM_ENTRIES:
-            check = True
-            break
+    check = 0
+    count = 0
+    for arr in f.root.data:
+        if(count % 7 == 0):
+            c = np.array((f.root.data[count:count+NUM_ENTRIES,0:]))
+            idx = np.where(abs((c[:,np.newaxis,:] - array)).sum(axis=2) == 0)
+            if len(idx[0]) == NUM_ENTRIES:
+                check += 1
+                
+        count += 1
     f.close()
-    if check:
-        print "Duplicate Solution"
-        return False
+    if check > 0:
+        print ("Duplicate Solution")
+        print(check)
+        return False , check
     else:
-        print "Unique Solution"
+        print ("Unique Solution")
         f = tables.open_file(filename, mode='a')
         f.root.data.append(array)
         f.close()
-        return True
+        return True , 0
 
 
 def create_dictionary(options):
@@ -48,8 +51,8 @@ def create_dictionary(options):
             for entry2 in option2:
                 key2 += str(entry2)
             top_dictionary[key1][key2] = []
-            for i in xrange(len(option)):
-                for j in xrange(len(option2)):
+            for i in range(len(option)):
+                for j in range(len(option2)):
                     top_dictionary[key1][key2].append(option[i]*option2[j])
     return top_dictionary
 
@@ -79,10 +82,50 @@ def find_options(matrix_size, mirror):
 
 if __name__ == '__main__':
 
-    possible_options = find_options(2, True)
-    dictionary = create_dictionary(possible_options)
-    data = json.dumps(dictionary)
-    with open('2by2data.json', 'w') as outfile:
-        outfile.write(data)
-    print dictionary["10-10"]["10-10"]
-    print type(data)
+    f = tables.open_file("2by2.h5", mode='r')
+
+    count = 0
+    temp1 = []
+    temp2 = []
+    for item in f.root.data:
+        if(count % 7 == 0 and count != 0):
+            temp2.append(temp1)
+            temp1 = []            
+        temp1.append(item)
+
+        count+=1
+
+
+    f.close()
+    total_duplicates = 0
+    temp2 = np.array(temp2)
+    newCount = 0
+    for item in temp2:
+        print("Solution Number: ",  newCount)
+        print(item)
+        result, duplicates = check_and_write(item,"2by2.h5", 7, newCount)
+        if(result):
+            break
+        total_duplicates = duplicates -1
+        print("total duplicates so far = ", total_duplicates)
+        newCount += 1
+   
+        
+    
+
+    # for i in range(10):
+    #     print(f.root.data[i])
+        
+        
+ 
+ 
+ 
+
+    # 
+    # possible_options = find_options(2, True)
+    # dictionary = create_dictionary(possible_options)
+    # data = json.dumps(dictionary)
+    # with open('2by2data.json', 'w') as outfile:
+    #     outfile.write(data)
+    # print (dictionary["10-10"]["10-10"])
+    # print (type(data))

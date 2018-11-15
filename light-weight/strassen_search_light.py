@@ -66,7 +66,7 @@ class StrassenSearch:
         self.cost = []
         self.solution = solution
         self.options = options
-        for i in xrange(self.num_of_pop):
+        for i in range(self.num_of_pop):
             chromosome = self.create_chromosome()
             val = self.decode(chromosome)
             final_val = self.expand(val)
@@ -84,9 +84,9 @@ class StrassenSearch:
         for i in range(cols):
             key1 = ""
             key2 = ""
-            for j in range(rows/2):
+            for j in range(int(rows/2)):
                 key1 += str(value[j][i])
-            for j in range(rows/2, rows):
+            for j in range(int(rows/2), rows):
                 key2 += str(value[j][i])
             if key1 == '0000' or key2 == '0000':
                 final_value.append([0]*16)
@@ -100,8 +100,8 @@ class StrassenSearch:
         best_val = value
         best_final_value = final_value
         best_x = x
-        for i in xrange(0, len(value), 1):
-            for j in xrange(0, len(value[0]), 1):
+        for i in range(0, len(value), 1):
+            for j in range(0, len(value[0]), 1):
                 val1 = np.copy(value)
                 val2 = np.copy(value)
                 if value[i][j] == 1:
@@ -151,7 +151,7 @@ class StrassenSearch:
         rows = self.dimension ** 3
         cols = self.multiplication
         chromosome = 0b0
-        for i in xrange(rows * cols):
+        for i in range(rows * cols):
             choice = np.random.randint(0, 34)
             chromosome = chromosome << 3
             # starting with more zeros seems to work faster
@@ -270,7 +270,7 @@ class StrassenSearch:
             self.prev_best_i1 = self.best_i
             self.prev_best_cost1 = self.best_cost
             if self.best_cost == 1:
-                print self.best_value
+                print (self.best_value)
                 check_and_write(self.best_value.T, self.filename, self.multiplication)
                 self.running = 0
                 self.success = 1
@@ -304,7 +304,7 @@ class StrassenSearch:
     def simple_search(self, number_of_runs):
         while self.count < number_of_runs and self.running:
             pop2 = np.copy(self.population)
-            for i in xrange(self.num_of_pop):
+            for i in range(self.num_of_pop):
                 # trial_a = 0b0
                 # trial_b = 0b0
                 while True:
@@ -348,7 +348,7 @@ class StrassenSearch:
                     self.best_value = self.value[i]
                     self.final_best_value = self.final_value[i]
 
-            for i in xrange(self.num_of_pop):
+            for i in range(self.num_of_pop):
                 if (not self.improvement[i]) and self.temp_cost_finder[i] == self.cost[i]:
                     pass
                 else:
@@ -407,6 +407,6 @@ if __name__ == "__main__":
             fd.close()
             start = time.time()
         else:
-            print "-restart-"
+            print ("-restart-")
 
 
